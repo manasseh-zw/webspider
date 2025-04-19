@@ -11,7 +11,7 @@ Content-Type: application/json
 
 ### Scrape Multiple URLs (Batch)
 POST http://localhost:8001/scrape/batch
-Content-Type: application/json
+plication/json
 
 {
     "urls": [
