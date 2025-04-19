@@ -10,13 +10,20 @@ Content-Type: application/json
 }
 
 ### Scrape Multiple URLs (Batch)
-POST http://localhost:8001/scrape/batch
-plication/json
+POST https://manasseh-zw--scrape-batch.modal.run
+Content-Type: application/json
 
 {
     "urls": [
         "https://example.com",
         "https://httpbin.org/html",
-        "https://news.ycombinator.com"
+        "https://news.ycombinator.com",
+        "https://www.theverge.com/openai/648130/openai-social-network-x-competitor",
+        "https://www.theverge.com/openai/648130/openai-social-network-x-competitor",
+        "https://www.theverge.com/openai/648130/openai-social-network-x-competitor",
+        "https://www.theverge.com/openai/648130/openai-social-network-x-competitor",
+        "https://www.theverge.com/openai/648130/openai-social-network-x-competitor",
+        "https://www.theverge.com/openai/648130/openai-social-network-x-competitor",
+        "https://www.theverge.com/openai/648130/openai-social-network-x-competitor"
     ]
 }

@@ -1,14 +1,43 @@
-from typing import List, Optional
+from http.client import HTTPException
+import modal
+from typing import Optional, List
+from pydantic import BaseModel, HttpUrl
 from crawl4ai import (
     AsyncWebCrawler,
-    CacheMode,
     CrawlResult,
     CrawlerRunConfig,
     DefaultMarkdownGenerator,
     PruningContentFilter,
+    CacheMode,
 )
-from fastapi import FastAPI, HTTPException
-from pydantic import BaseModel, HttpUrl
+
+
+# Create a Modal image with UV and Playwright
+def setup_image():
+    return (
+        modal.Image.debian_slim(python_version="3.13")
+        .apt_install(
+            "software-properties-common",
+            "wget",
+            "curl",
+        )
+        .pip_install_from_requirements("requirements.txt")
+        .run_commands(
+            "apt-get update",
+            "apt-get install -y software-properties-common",
+            "apt-add-repository non-free",
+            "apt-add-repository contrib",
+            "playwright install-deps chromium",
+            "playwright install chromium",
+            "playwright install",
+        )
+    )
+
+
+# Create the image
+crawler = setup_image()
+
+app = modal.App("crawler")
 
 
 class SingleScrapeRequest(BaseModel):
@@ -101,28 +130,26 @@ async def scrape_batch(urls: List[HttpUrl]) -> BatchScrapeResponse:
         )
 
 
-app = FastAPI(
-    title="Apollo WebSpider",
-    description="A microservice for scraping web content",
-    version="0.1.0",
-)
-
-
-@app.post("/scrape", response_model=ScrapeResponse)
+@app.function(image=crawler)
+@modal.fastapi_endpoint(method="POST", docs=True, label="scrape")
 async def scrape_endpoint(request: SingleScrapeRequest) -> ScrapeResponse:
-
     return await scrape(request.url)
 
 
-@app.post("/scrape/batch", response_model=BatchScrapeResponse)
+@app.function(image=crawler)
+@modal.fastapi_endpoint(method="POST", docs=True, label="scrape-batch")
 async def scrape_batch_endpoint(request: BatchScrapeRequest) -> BatchScrapeResponse:
-
     if not request.urls:
         raise HTTPException(status_code=400, detail="No URLs provided")
-
     return await scrape_batch(request.urls)
 
 
-@app.get("/")
-async def root():
+@app.function(image=crawler)
+@modal.fastapi_endpoint(method="GET")
+async def health():
     return {"status": "ok", "service": "Apollo WebSpider"}
+
+
+# @app.get("/")
+# async def root():
+#     return {"status": "ok", "service": "Apollo WebSpider"}
