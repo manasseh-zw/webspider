@@ -7,6 +7,7 @@ from crawl4ai import (
     CrawlerRunConfig,
     DefaultMarkdownGenerator,
     PruningContentFilter,
+    CacheMode,
 )
 
 
@@ -31,7 +32,7 @@ class BatchScrapeResponse(BaseModel):
 
 
 async def scrape(url: HttpUrl) -> ScrapeResponse:
-    """Scrape a single URL."""
+
     try:
         async with AsyncWebCrawler() as crawler:
             result: CrawlResult = await crawler.arun(
@@ -42,6 +43,7 @@ async def scrape(url: HttpUrl) -> ScrapeResponse:
                         content_filter=PruningContentFilter()
                     ),
                     exclude_social_media_links=True,
+                    cache_mode=CacheMode.BYPASS,
                 ),
             )
             if result.success:
@@ -56,40 +58,42 @@ async def scrape(url: HttpUrl) -> ScrapeResponse:
 
 
 async def scrape_batch(urls: List[HttpUrl]) -> BatchScrapeResponse:
-    """Scrape multiple URLs in batch."""
+
     try:
         results = []
         async with AsyncWebCrawler() as crawler:
-            for url in urls:
-                try:
-                    result: CrawlResult = await crawler.arun(
-                        url=str(url),
-                        config=CrawlerRunConfig(
-                            exclude_external_links=True,
-                            markdown_generator=DefaultMarkdownGenerator(
-                                content_filter=PruningContentFilter()
-                            ),
-                            exclude_social_media_links=True,
-                        ),
+            # Use arun_many for parallel crawling
+            crawl_results = await crawler.arun_many(
+                urls=[str(url) for url in urls],
+                config=CrawlerRunConfig(
+                    exclude_external_links=True,
+                    markdown_generator=DefaultMarkdownGenerator(
+                        content_filter=PruningContentFilter()
+                    ),
+                    exclude_social_media_links=True,
+                    cache_mode=CacheMode.BYPASS,
+                    stream=False,
+                ),
+            )
+
+            # Process results
+            for result in crawl_results:
+                if result.success:
+                    results.append(
+                        {
+                            "url": result.url,
+                            "content": result.markdown_v2.fit_markdown,
+                            "success": True,
+                        }
                     )
-                    if result.success:
-                        results.append(
-                            {
-                                "url": str(url),
-                                "content": result.markdown_v2.fit_markdown,
-                                "success": True,
-                            }
-                        )
-                    else:
-                        results.append(
-                            {
-                                "url": str(url),
-                                "success": False,
-                                "error": "Failed to scrape content",
-                            }
-                        )
-                except Exception as e:
-                    results.append({"url": str(url), "success": False, "error": str(e)})
+                else:
+                    results.append(
+                        {
+                            "url": result.url,
+                            "success": False,
+                            "error": result.error_message or "Failed to scrape content",
+                        }
+                    )
 
         return BatchScrapeResponse(success=True, results=results)
 
