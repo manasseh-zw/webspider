@@ -8,3 +8,6 @@ wheels/
 
 # Virtual environments
 .venv
+
+# Specific files
+quickstart_examples_set_1.py
