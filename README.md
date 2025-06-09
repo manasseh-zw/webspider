@@ -1,6 +1,6 @@
-# Apollo WebSpider 🕷️
+# WebSpider 🕷️
 
-A high-performance web scraping microservice built with crawl4ai and FastAPI, designed for Apollo ~ Deep Research Agent. This service provides efficient web content extraction with support for both single-URL and batch operations.
+A high-performance web scraping microservice built with crawl4ai and FastAPI This service provides efficient web content extraction with support for both single-URL and batch operations.
 
 ## Features
 
